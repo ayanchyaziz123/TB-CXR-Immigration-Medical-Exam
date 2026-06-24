@@ -21,7 +21,7 @@ from PIL import Image
 # Critical: if CLAHE and ROI crop are applied at training time but not at inference,
 # the model sees a different pixel distribution and confidence scores drop significantly.
 try:
-    from dataset.data_cleaning import CLAHETransform, LungROICrop
+    from data_cleaning import CLAHETransform, LungROICrop
     _preprocessing_available = True
 except ImportError:
     # Fallback: if running inference.py outside the project root, preprocessing is skipped.
