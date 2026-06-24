@@ -9,12 +9,26 @@ Usage:
 
 import argparse
 import os
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torchvision import transforms, models
 from PIL import Image
+
+# Import the same preprocessing transforms used during training.
+# Critical: if CLAHE and ROI crop are applied at training time but not at inference,
+# the model sees a different pixel distribution and confidence scores drop significantly.
+try:
+    from dataset.data_cleaning import CLAHETransform, LungROICrop
+    _preprocessing_available = True
+except ImportError:
+    # Fallback: if running inference.py outside the project root, preprocessing is skipped.
+    # Warn the user — results may be less accurate without these transforms.
+    print('[WARNING] dataset.data_cleaning not found. Running without CLAHE + ROI crop.')
+    print('          For best results, run from the project root directory.')
+    _preprocessing_available = False
 
 # ── Constants ──────────────────────────────────────────────────────────────
 LABEL_NAMES   = ['Normal', 'Inactive_TB', 'Active_TB', 'Severe_TB']
@@ -27,12 +41,29 @@ USCIS_ACTIONS = [
 ]
 IMG_SIZE = 224
 
-val_transforms = transforms.Compose([
-    transforms.Resize((IMG_SIZE, IMG_SIZE)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
-])
+# Dataset-specific normalization stats (computed from TBX11K training split after CLAHE).
+# These replace ImageNet stats [0.485, 0.456, 0.406] which are tuned for natural photos.
+# Chest X-rays after CLAHE have a different intensity distribution than ImageNet.
+DATASET_MEAN = [0.531, 0.531, 0.531]
+DATASET_STD  = [0.252, 0.252, 0.252]
+
+# Build the preprocessing pipeline: match exactly what the training notebook uses in Section 3.
+# Order: ROI crop → CLAHE → Resize → ToTensor → Normalize
+if _preprocessing_available:
+    val_transforms = transforms.Compose([
+        LungROICrop(margin=0.03),                           # Remove borders, text, rulers
+        CLAHETransform(clip_limit=2.0, tile_grid_size=(8, 8)),  # Local contrast enhancement
+        transforms.Resize((IMG_SIZE, IMG_SIZE)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=DATASET_MEAN, std=DATASET_STD),
+    ])
+else:
+    # Degraded fallback: no preprocessing, ImageNet normalization
+    val_transforms = transforms.Compose([
+        transforms.Resize((IMG_SIZE, IMG_SIZE)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
 
 
 # ── Model ──────────────────────────────────────────────────────────────────

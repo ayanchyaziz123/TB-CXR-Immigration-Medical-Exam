@@ -45,12 +45,13 @@ No existing AI system outputs these four categories directly. TB-CXR is the firs
 2. **Asymmetric Triage Loss** — Class A (Severe TB) penalized 5× more; reduces false-negative rate from 10.9% → 5.6%
 3. **Three-model comparison** — DenseNet-121, ResNet-50, EfficientNet-B4 benchmarked on same task
 4. **Cross-site generalization** — Train on TBX11K; validate on Montgomery (USA) + Shenzhen (China)
-5. **Per-class ROC-AUC** — Standard medical AI evaluation for all four severity classes
-6. **GradCAM explainability** — Highlights cavities, consolidations, calcifications for civil surgeon documentation
-7. **MC Dropout uncertainty** — Flags Active/Severe TB for mandatory civil surgeon review
-8. **Civil surgeon workflow simulation** — Quantifies 71.3% burden reduction with zero missed Class A
-9. **CD-CTEI fairness** — Equity across age and sex subgroups (CD-CTEI=0.961)
-10. **`inference.py`** — Standalone civil surgeon workstation deployment script
+5. **Professional data cleaning pipeline** — CLAHE enhancement, lung ROI cropping, perceptual-hash duplicate detection, quality filtering; applied consistently at train and inference time
+6. **Per-class ROC-AUC** — Standard medical AI evaluation for all four severity classes
+7. **GradCAM explainability** — Highlights cavities, consolidations, calcifications for civil surgeon documentation
+8. **MC Dropout uncertainty** — Flags Active/Severe TB for mandatory civil surgeon review
+9. **Civil surgeon workflow simulation** — Quantifies 71.3% burden reduction with zero missed Class A
+10. **CD-CTEI fairness** — Equity across age and sex subgroups (CD-CTEI=0.961)
+11. **`inference.py`** — Standalone civil surgeon workstation deployment script with same preprocessing as training
 
 ---
 
@@ -64,6 +65,8 @@ TB-CXR-Immigration-Medical-Exam/
 ├── requirements.txt
 ├── README.md
 ├── dataset/
+│   ├── __init__.py
+│   ├── data_cleaning.py                   # CLAHE, ROI crop, dedup, quality filter
 │   ├── prepare_labels.py                  # 4-class CDC label extraction
 │   └── download_instructions.md
 └── checkpoints/
